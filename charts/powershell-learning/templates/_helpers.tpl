@@ -9,14 +9,14 @@ Expand the name of the chart.
 Create a default fully qualified app name.
 */}}
 {{- define "powershell-learning.fullname" -}}
-{{- if .Values.fullnameOverride }}
+{{- if and .Values .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
-{{- $name := default .Chart.Name .Values.nameOverride }}
-{{- if contains $name .Release.Name }}
+{{- $name := default (and .Chart .Chart.Name | default "powershell-learning") (and .Values .Values.nameOverride) }}
+{{- if and .Release .Release.Name (contains $name .Release.Name) }}
 {{- .Release.Name | trunc 63 | trimSuffix "-" }}
 {{- else }}
-{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-%s" (and .Release .Release.Name | default "release") $name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 {{- end }}
 {{- end }}
