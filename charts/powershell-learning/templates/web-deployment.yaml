@@ -1,0 +1,40 @@
+{{- if .Values.web.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "powershell-learning.fullname" . }}-web
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "powershell-learning.labels" . | nindent 4 }}
+    component: web
+spec:
+  replicas: {{ .Values.web.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "powershell-learning.selectorLabels" . | nindent 6 }}
+      component: web
+  template:
+    metadata:
+      labels:
+        {{- include "powershell-learning.selectorLabels" . | nindent 8 }}
+        component: web
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: web
+        image: "{{ .Values.global.imageRegistry }}/{{ .Values.global.imagePrefix }}/{{ .Values.web.image.name }}:{{ .Values.web.image.tag }}"
+        imagePullPolicy: {{ .Values.web.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.web.service.port }}
+          name: http
+        env:
+        - name: API_SERVICE_NAME
+          value: {{ include "powershell-learning.fullname" . }}-api
+        - name: API_SERVICE_PORT
+          value: "{{ .Values.api.service.port }}"
+        resources:
+          {{- toYaml .Values.web.resources | nindent 10 }}
+{{- end }}

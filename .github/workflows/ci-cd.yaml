@@ -12,6 +12,7 @@ env:
   IMAGE_NAME_API: ${{ github.repository }}/powershell-api
   IMAGE_NAME_EXECUTOR: ${{ github.repository }}/powershell-executor
   IMAGE_NAME_RUNNER: ${{ github.repository }}/powershell-runner
+  IMAGE_NAME_WEB: ${{ github.repository }}/powershell-web
   CHART_NAME: powershell-learning
   CHART_PATH: ./charts/powershell-learning
 
@@ -129,6 +130,29 @@ jobs:
           push: true
           tags: ${{ steps.meta-runner.outputs.tags }}
           labels: ${{ steps.meta-runner.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract metadata for Web
+        id: meta-web
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEB }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+
+      - name: Build and push Web image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./web/Dockerfile
+          push: true
+          tags: ${{ steps.meta-web.outputs.tags }}
+          labels: ${{ steps.meta-web.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
