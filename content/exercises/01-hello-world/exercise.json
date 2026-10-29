@@ -1,0 +1,13 @@
+{
+    "id": "01-hello-world",
+    "version": 1,
+    "title": "Say hello",
+    "description": "Your first PowerShell exercise.",
+    "instructions": "Write a script that outputs exactly: Hello, world!",
+    "difficulty": "beginner",
+    "tags": [
+        "basics",
+        "output"
+    ],
+    "starter_code": "Write-Output 'Hello, saturn!'"
+}

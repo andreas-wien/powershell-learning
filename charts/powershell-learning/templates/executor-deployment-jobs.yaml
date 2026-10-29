@@ -1,0 +1,63 @@
+{{- if and .Values.executor.enabled (eq .Values.executor.strategy "k8s-jobs") }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "powershell-learning.fullname" . }}-executor
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "powershell-learning.labels" . | nindent 4 }}
+    component: executor
+spec:
+  replicas: {{ .Values.executor.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "powershell-learning.selectorLabels" . | nindent 6 }}
+      component: executor
+  template:
+    metadata:
+      labels:
+        {{- include "powershell-learning.selectorLabels" . | nindent 8 }}
+        component: executor
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "50051"
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "powershell-learning.fullname" . }}-executor-job
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: executor
+        image: "{{ .Values.global.imageRegistry }}/{{ .Values.executor.image.repository }}:{{ .Values.executor.image.tag }}"
+        imagePullPolicy: {{ .Values.executor.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.executor.service.port }}
+          name: grpc
+        env:
+        {{- range $key, $value := .Values.executor.env }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+        {{- end }}
+        - name: RUNNER_IMAGE
+          value: "{{ .Values.global.imageRegistry }}/{{ .Values.executor.runnerImage.repository }}:{{ .Values.executor.runnerImage.tag }}"
+        - name: K8S_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        resources:
+          {{- toYaml .Values.executor.resources | nindent 10 }}
+        livenessProbe:
+          exec:
+            command: ["/bin/sh", "-c", "grpc_health_probe -addr=:50051"]
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command: ["/bin/sh", "-c", "grpc_health_probe -addr=:50051"]
+          initialDelaySeconds: 5
+          periodSeconds: 5
+{{- end }}

@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package executor;
+
+service Executor {
+  rpc RunScript(RunRequest) returns (RunResponse);
+  rpc GradeExercise(GradeRequest) returns (GradeResponse);
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
+
+message RunRequest {
+  string script = 1;
+  int32 timeout_seconds = 2;
+  int32 max_output_bytes = 3;
+}
+
+message RunResponse {
+  string stdout = 1;
+  string stderr = 2;
+  int32 exit_code = 3;
+  bool timed_out = 4;
+}
+
+message GradeRequest {
+  string exercise_id = 1;
+  string script = 2;
+  string workspace_path = 3;
+  string grading_path = 4;
+}
+
+message GradeResponse {
+  bool passed = 1;
+  string message = 2;
+  string stdout = 3;
+  string stderr = 4;
+  int32 exit_code = 5;
+  bool timed_out = 6;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  string version = 2;
+}

@@ -1,0 +1,20 @@
+{{- if .Values.executor.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "powershell-learning.fullname" . }}-executor
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "powershell-learning.labels" . | nindent 4 }}
+    component: executor
+spec:
+  type: ClusterIP
+  ports:
+  - port: {{ .Values.executor.service.port }}
+    targetPort: grpc
+    protocol: TCP
+    name: grpc
+  selector:
+    {{- include "powershell-learning.selectorLabels" . | nindent 4 }}
+    component: executor
+{{- end }}

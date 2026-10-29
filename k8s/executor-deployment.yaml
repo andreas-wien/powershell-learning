@@ -1,0 +1,122 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: powershell-executor
+  namespace: powershell-learning
+  labels:
+    app: powershell-executor
+    component: executor
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: powershell-executor
+  template:
+    metadata:
+      labels:
+        app: powershell-executor
+        component: executor
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "50051"
+    spec:
+      serviceAccountName: powershell-executor
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: executor
+        image: your-registry/powershell-executor:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 50051
+          name: grpc
+        env:
+        - name: RUNNER_IMAGE
+          value: "powershell-runner:dev"
+        - name: EXECUTOR_ADDR
+          value: "0.0.0.0:50051"
+        - name: RUST_LOG
+          value: "info,apps_executor=debug"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command: ["/bin/sh", "-c", "grpc_health_probe -addr=:50051"]
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command: ["/bin/sh", "-c", "grpc_health_probe -addr=:50051"]
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: podman-socket
+          mountPath: /run/podman/podman.sock
+        - name: containers-storage
+          mountPath: /home/appuser/.local/share/containers
+      volumes:
+      - name: podman-socket
+        hostPath:
+          path: /run/podman/podman.sock
+          type: Socket
+      - name: containers-storage
+        emptyDir:
+          sizeLimit: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: powershell-executor
+  namespace: powershell-learning
+  labels:
+    app: powershell-executor
+    component: executor
+spec:
+  type: ClusterIP
+  ports:
+  - port: 50051
+    targetPort: 50051
+    protocol: TCP
+    name: grpc
+  selector:
+    app: powershell-executor
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: powershell-executor
+  namespace: powershell-learning
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: powershell-executor
+  namespace: powershell-learning
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log"]
+  verbs: ["get", "list", "watch", "create", "delete"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["get", "list", "watch", "create", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: powershell-executor
+  namespace: powershell-learning
+subjects:
+- kind: ServiceAccount
+  name: powershell-executor
+  namespace: powershell-learning
+roleRef:
+  kind: Role
+  name: powershell-executor
+  apiGroup: rbac.authorization.k8s.io

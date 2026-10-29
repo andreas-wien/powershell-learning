@@ -1,0 +1,41 @@
+{{- if and .Values.executor.enabled (eq .Values.executor.strategy "k8s-jobs") }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "powershell-learning.fullname" . }}-executor-job
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "powershell-learning.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "powershell-learning.fullname" . }}-executor-job
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "powershell-learning.labels" . | nindent 4 }}
+rules:
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["get", "list", "watch", "create", "delete", "patch"]
+- apiGroups: [""]
+  resources: ["pods", "pods/log"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "powershell-learning.fullname" . }}-executor-job
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "powershell-learning.labels" . | nindent 4 }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "powershell-learning.fullname" . }}-executor-job
+  namespace: {{ .Values.global.namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "powershell-learning.fullname" . }}-executor-job
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}

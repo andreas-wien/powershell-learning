@@ -1,0 +1,14 @@
+apiVersion: v2
+name: powershell-learning
+description: PowerShell Learning Platform - API, Executor, and Runner
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - powershell
+  - education
+  - grpc
+  - api
+maintainers:
+  - name: Your Name
+    email: your.email@example.com

@@ -1,0 +1,11 @@
+# PowerShell runner container with Pester for testing
+FROM mcr.microsoft.com/powershell:latest
+
+# Install Pester 5.7.1 (required version)
+RUN pwsh -Command "Install-Module -Name Pester -RequiredVersion 5.7.1 -Force -Scope AllUsers"
+
+# Set working directory
+WORKDIR /workspace
+
+# Default entrypoint
+ENTRYPOINT ["pwsh", "-NoLogo", "-NoProfile", "-NonInteractive"]

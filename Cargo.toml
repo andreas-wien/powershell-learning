@@ -1,0 +1,3 @@
+[workspace]
+members = ["apps-executor", "apps-api","proto-gen"]
+resolver = "2"

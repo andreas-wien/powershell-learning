@@ -1,0 +1,75 @@
+# Default values for powershell-learning
+# This is a YAML-formatted file.
+
+global:
+  imageRegistry: ghcr.io
+  imagePullSecrets: []
+  namespace: powershell-learning
+
+api:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: powershell-api
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3000
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+  env:
+    EXECUTOR_ADDR: "http://powershell-executor:50051"
+    API_ADDR: "0.0.0.0:3000"
+    RUST_LOG: "info,apps_api=debug,axum=info,tower_http=info"
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    hosts:
+      - host: powershell.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: powershell-api-tls
+        hosts:
+          - powershell.example.com
+
+executor:
+  enabled: true
+  replicaCount: 2
+  strategy: "k8s-jobs"  # or "podman"
+  image:
+    repository: powershell-executor
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 50051
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+  env:
+    EXECUTOR_ADDR: "0.0.0.0:50051"
+    RUST_LOG: "info,apps_executor=debug,tonic=info"
+  # Runner image used by executor for grading
+  runnerImage:
+    repository: powershell-runner
+    tag: latest
+    pullPolicy: IfNotPresent
+
+# Image pull secrets for private registries
+imagePullSecrets: []
+# - name: ghcr-secret
+
+# Network policies, RBAC, etc. can be added as needed
