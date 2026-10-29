@@ -17,7 +17,7 @@ COPY proto/ ./proto/
 RUN cargo build --release -p apps-executor
 
 # Runtime stage
-FROM debian:bookworm-slim
+FROM rust:1.89-slim
 
 # Install docker CLI (needed to run containers)
 RUN apt-get update && apt-get install -y \

@@ -17,7 +17,7 @@ COPY proto/ ./proto/
 RUN cargo build --release -p apps-api
 
 # Runtime stage
-FROM debian:bookworm-slim
+FROM rust:1.89-slim
 
 RUN apt-get update && apt-get install -y \
     ca-certificates \
