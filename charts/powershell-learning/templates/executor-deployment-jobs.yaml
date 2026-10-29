@@ -32,7 +32,7 @@ spec:
         runAsUser: 1000
       containers:
       - name: executor
-        image: "{{ .Values.global.imageRegistry }}/{{ .Values.executor.image.repository }}:{{ .Values.executor.image.tag }}"
+        image: "{{ .Values.global.imageRegistry }}/{{ .Values.global.imagePrefix }}/{{ .Values.executor.image.name }}:{{ .Values.executor.image.tag }}"
         imagePullPolicy: {{ .Values.executor.image.pullPolicy }}
         ports:
         - containerPort: {{ .Values.executor.service.port }}
@@ -43,7 +43,7 @@ spec:
           value: {{ $value | quote }}
         {{- end }}
         - name: RUNNER_IMAGE
-          value: "{{ .Values.global.imageRegistry }}/{{ .Values.executor.runnerImage.repository }}:{{ .Values.executor.runnerImage.tag }}"
+          value: "{{ .Values.global.imageRegistry }}/{{ .Values.global.imagePrefix }}/{{ .Values.executor.runnerImage.name }}:{{ .Values.executor.runnerImage.tag }}"
         - name: K8S_NAMESPACE
           valueFrom:
             fieldRef:

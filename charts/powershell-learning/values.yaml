@@ -3,6 +3,7 @@
 
 global:
   imageRegistry: ghcr.io
+  imagePrefix: "andreas-wien/powershell-learning"  # org/repo prefix for GHCR
   imagePullSecrets: []
   namespace: powershell-learning
 
@@ -10,7 +11,7 @@ api:
   enabled: true
   replicaCount: 2
   image:
-    repository: powershell-api
+    name: powershell-api
     tag: latest
     pullPolicy: IfNotPresent
   service:
@@ -24,7 +25,7 @@ api:
       memory: "256Mi"
       cpu: "250m"
   env:
-    EXECUTOR_ADDR: "http://powershell-executor:50051"
+    EXECUTOR_ADDR: "http://{{ include \"powershell-learning.fullname\" . }}-executor:50051"
     API_ADDR: "0.0.0.0:3000"
     RUST_LOG: "info,apps_api=debug,axum=info,tower_http=info"
   ingress:
@@ -47,7 +48,7 @@ executor:
   replicaCount: 2
   strategy: "k8s-jobs"  # or "podman"
   image:
-    repository: powershell-executor
+    name: powershell-executor
     tag: latest
     pullPolicy: IfNotPresent
   service:
@@ -64,9 +65,15 @@ executor:
     RUST_LOG: "info,apps_executor=debug,tonic=info"
   # Runner image used by executor for grading
   runnerImage:
-    repository: powershell-runner
+    name: powershell-runner
     tag: latest
     pullPolicy: IfNotPresent
+
+# Service accounts
+serviceAccount:
+  create: true
+  annotations: {}
+  # name: ""  # defaults to fullname
 
 # Image pull secrets for private registries
 imagePullSecrets: []

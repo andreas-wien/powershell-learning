@@ -17,5 +17,18 @@ spec:
     {{- toYaml .Values.api.ingress.tls | nindent 4 }}
   {{- end }}
   rules:
-    {{- toYaml .Values.api.ingress.hosts | nindent 4 }}
+    {{- range .Values.api.ingress.hosts }}
+    - host: {{ .host }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ include "powershell-learning.fullname" . }}-api
+                port:
+                  number: {{ $.Values.api.service.port }}
+          {{- end }}
+    {{- end }}
 {{- end }}
