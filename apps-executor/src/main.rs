@@ -11,7 +11,8 @@ use service::ExecutorService;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::new(
-            std::env::var("RUST_LOG").unwrap_or_else(|_| "info,apps_executor=debug,tonic=info".into()),
+            std::env::var("RUST_LOG")
+                .unwrap_or_else(|_| "info,apps_executor=debug,tonic=info".into()),
         ))
         .with(tracing_subscriber::fmt::layer())
         .init();
@@ -25,10 +26,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing::info!("Starting Executor gRPC server on {}", addr);
 
-    Server::builder()
-        .add_service(svc)
-        .serve(addr)
-        .await?;
+    Server::builder().add_service(svc).serve(addr).await?;
 
     Ok(())
 }

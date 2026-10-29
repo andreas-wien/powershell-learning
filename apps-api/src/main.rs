@@ -1,9 +1,9 @@
 use axum::{
+    Router,
     extract::{DefaultBodyLimit, Path, State},
     http::StatusCode,
     response::Json,
     routing::{get, post},
-    Router,
 };
 use serde::{Deserialize, Serialize};
 use std::{net::SocketAddr, path::PathBuf, sync::Arc};
@@ -73,13 +73,19 @@ async fn run_powershell(
     }
 
     if request.script.len() > MAX_SCRIPT_BYTES {
-        return Err((StatusCode::PAYLOAD_TOO_LARGE, "Script exceeds the 16 KiB limit".into()));
+        return Err((
+            StatusCode::PAYLOAD_TOO_LARGE,
+            "Script exceeds the 16 KiB limit".into(),
+        ));
     }
 
     let mut client = state.executor_client.lock().await;
     let result = client.run_script(request.script).await.map_err(|e| {
         error!("Executor run_script failed: {}", e);
-        (StatusCode::INTERNAL_SERVER_ERROR, format!("Execution failed: {}", e))
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Execution failed: {}", e),
+        )
     })?;
 
     Ok(Json(RunResponse {
@@ -111,21 +117,32 @@ async fn submit_exercise(
     let exercise_file = exercise_dir.join("exercise.json");
     let tests_file = exercise_dir.join("tests.Tests.ps1");
 
-    let contents = tokio::fs::read_to_string(&exercise_file).await.map_err(|error| {
-        if error.kind() == std::io::ErrorKind::NotFound {
-            (StatusCode::NOT_FOUND, "Exercise not found".into())
-        } else {
-            (StatusCode::INTERNAL_SERVER_ERROR, "Failed to read exercise definition".into())
-        }
-    })?;
+    let contents = tokio::fs::read_to_string(&exercise_file)
+        .await
+        .map_err(|error| {
+            if error.kind() == std::io::ErrorKind::NotFound {
+                (StatusCode::NOT_FOUND, "Exercise not found".into())
+            } else {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Failed to read exercise definition".into(),
+                )
+            }
+        })?;
 
     let exercise: Exercise = serde_json::from_str(&contents).map_err(|error| {
         error!("Invalid exercise definition for {id}: {error}");
-        (StatusCode::INTERNAL_SERVER_ERROR, "Invalid exercise definition".into())
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Invalid exercise definition".into(),
+        )
     })?;
 
     if exercise.id != id {
-        return Err((StatusCode::INTERNAL_SERVER_ERROR, "Exercise ID mismatch".into()));
+        return Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Exercise ID mismatch".into(),
+        ));
     }
 
     if !tokio::fs::try_exists(&tests_file).await.unwrap_or(false) {
@@ -138,15 +155,23 @@ async fn submit_exercise(
     // Create a temporary directory for the learner's script.
     let workspace = tempfile::tempdir().map_err(|error| {
         error!("Failed to create submission workspace: {error}");
-        (StatusCode::INTERNAL_SERVER_ERROR, "Failed to prepare submission".into())
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Failed to prepare submission".into(),
+        )
     })?;
 
     let learner_script = workspace.path().join("learner.ps1");
 
-    tokio::fs::write(&learner_script, &request.script).await.map_err(|error| {
-        error!("Failed to write learner script: {error}");
-        (StatusCode::INTERNAL_SERVER_ERROR, "Failed to prepare submission".into())
-    })?;
+    tokio::fs::write(&learner_script, &request.script)
+        .await
+        .map_err(|error| {
+            error!("Failed to write learner script: {error}");
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to prepare submission".into(),
+            )
+        })?;
 
     let workspace_path = workspace.path().to_string_lossy().into_owned();
 
@@ -161,7 +186,10 @@ async fn submit_exercise(
         .await
         .map_err(|e| {
             error!("Executor grade_exercise failed: {}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, format!("Grading failed: {}", e))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Grading failed: {}", e),
+            )
         })?;
 
     Ok(Json(ExerciseResult {
@@ -215,7 +243,10 @@ async fn list_exercises(State(state): State<AppState>) -> Json<Vec<Exercise>> {
         match serde_json::from_str::<Exercise>(&contents) {
             Ok(exercise) => exercises.push(exercise),
             Err(error) => {
-                warn!("Skipping invalid exercise file {}: {error}", exercise_file.display());
+                warn!(
+                    "Skipping invalid exercise file {}: {error}",
+                    exercise_file.display()
+                );
             }
         }
     }
@@ -231,7 +262,9 @@ async fn get_exercise(Path(id): Path<String>) -> Result<Json<Exercise>, StatusCo
     }
 
     let exercises_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/../content/exercises");
-    let exercise_file = std::path::Path::new(exercises_dir).join(&id).join("exercise.json");
+    let exercise_file = std::path::Path::new(exercises_dir)
+        .join(&id)
+        .join("exercise.json");
 
     let contents = match tokio::fs::read_to_string(&exercise_file).await {
         Ok(contents) => contents,
@@ -239,7 +272,10 @@ async fn get_exercise(Path(id): Path<String>) -> Result<Json<Exercise>, StatusCo
             return Err(StatusCode::NOT_FOUND);
         }
         Err(error) => {
-            error!("Failed to read exercise {}: {error}", exercise_file.display());
+            error!(
+                "Failed to read exercise {}: {error}",
+                exercise_file.display()
+            );
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
@@ -260,15 +296,15 @@ async fn get_exercise(Path(id): Path<String>) -> Result<Json<Exercise>, StatusCo
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::new(
-                std::env::var("RUST_LOG").unwrap_or_else(|_| "info,apps_api=debug,axum=info,tower_http=info".into()),
-            )
-        )
+        .with(tracing_subscriber::EnvFilter::new(
+            std::env::var("RUST_LOG")
+                .unwrap_or_else(|_| "info,apps_api=debug,axum=info,tower_http=info".into()),
+        ))
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let executor_addr = std::env::var("EXECUTOR_ADDR").unwrap_or_else(|_| "http://127.0.0.1:50051".to_string());
+    let executor_addr =
+        std::env::var("EXECUTOR_ADDR").unwrap_or_else(|_| "http://127.0.0.1:50051".to_string());
     let exercises_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../content/exercises");
 
     info!("Connecting to executor at {}", executor_addr);
@@ -276,7 +312,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test connection
     match executor_client.health().await {
-        Ok(health) => info!("Executor health check: {} v{}", health.status, health.version),
+        Ok(health) => info!(
+            "Executor health check: {} v{}",
+            health.status, health.version
+        ),
         Err(e) => warn!("Executor health check failed: {}", e),
     }
 

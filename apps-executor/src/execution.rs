@@ -1,11 +1,11 @@
 use std::{io, process::Stdio, time::Duration};
 use tempfile::tempdir;
+use thiserror::Error;
 use tokio::{
     io::{AsyncRead, AsyncReadExt, AsyncWriteExt},
     process::Command,
     time::timeout,
 };
-use thiserror::Error;
 
 const MAX_SCRIPT_BYTES: usize = 16 * 1024;
 const MAX_OUTPUT_BYTES: usize = 64 * 1024;
@@ -54,7 +54,8 @@ pub struct RunConfig {
 impl Default for RunConfig {
     fn default() -> Self {
         Self {
-            image: std::env::var("RUNNER_IMAGE").unwrap_or_else(|_| "powershell-runner:dev".to_string()),
+            image: std::env::var("RUNNER_IMAGE")
+                .unwrap_or_else(|_| "powershell-runner:dev".to_string()),
             timeout: DEFAULT_TIMEOUT,
             max_script_bytes: MAX_SCRIPT_BYTES,
             max_output_bytes: MAX_OUTPUT_BYTES,
@@ -142,7 +143,14 @@ pub async fn run_script(script: String, config: RunConfig) -> Result<RunResult, 
     let docker_args = build_docker_args(&config, &[]);
     let mut child = Command::new("docker")
         .args(&docker_args)
-        .args(["-i", "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", "-"])
+        .args([
+            "-i",
+            "-NoLogo",
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            "-",
+        ])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -255,11 +263,13 @@ pub async fn grade_exercise(
 
     let _workspace_path = tokio::fs::canonicalize(&workspace_path)
         .await
-        .map_err(|e| ExecutionError::ContainerStart(format!("Could not resolve workspace path: {e}")))?;
+        .map_err(|e| {
+            ExecutionError::ContainerStart(format!("Could not resolve workspace path: {e}"))
+        })?;
 
-    let grading_path = tokio::fs::canonicalize(&grading_path)
-        .await
-        .map_err(|e| ExecutionError::ContainerStart(format!("Could not resolve grading path: {e}")))?;
+    let grading_path = tokio::fs::canonicalize(&grading_path).await.map_err(|e| {
+        ExecutionError::ContainerStart(format!("Could not resolve grading path: {e}"))
+    })?;
 
     let tests_file = grading_path.join("tests.Tests.ps1");
     if !tokio::fs::try_exists(&tests_file).await.unwrap_or(false) {
@@ -300,7 +310,9 @@ pub async fn grade_exercise(
         .stderr(Stdio::piped())
         .kill_on_drop(true)
         .spawn()
-        .map_err(|e| ExecutionError::ContainerStart(format!("Could not start Pester runner: {e}")))?;
+        .map_err(|e| {
+            ExecutionError::ContainerStart(format!("Could not start Pester runner: {e}"))
+        })?;
 
     let stdout = child
         .stdout
@@ -318,7 +330,9 @@ pub async fn grade_exercise(
     let (timed_out, exit_code) = match timeout(config.timeout, child.wait()).await {
         Ok(Ok(status)) => (false, status.code()),
         Ok(Err(e)) => {
-            return Err(ExecutionError::WaitContainer(format!("Could not wait for Pester runner: {e}")));
+            return Err(ExecutionError::WaitContainer(format!(
+                "Could not wait for Pester runner: {e}"
+            )));
         }
         Err(_) => {
             let _ = child.kill().await;
@@ -355,9 +369,7 @@ pub async fn grade_exercise(
     let message = if passed {
         format!("Correct! All {total_count} tests passed.")
     } else {
-        format!(
-            "Not quite. {passed_count} of {total_count} tests passed; {failed_count} failed."
-        )
+        format!("Not quite. {passed_count} of {total_count} tests passed; {failed_count} failed.")
     };
 
     Ok(GradeResult {

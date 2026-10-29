@@ -58,7 +58,11 @@ impl ExecutorClientWrapper {
         Ok(RunResult {
             stdout: resp.stdout,
             stderr: resp.stderr,
-            exit_code: if resp.exit_code >= 0 { Some(resp.exit_code) } else { None },
+            exit_code: if resp.exit_code >= 0 {
+                Some(resp.exit_code)
+            } else {
+                None
+            },
             timed_out: resp.timed_out,
         })
     }
@@ -95,7 +99,11 @@ impl ExecutorClientWrapper {
             message: resp.message,
             stdout: resp.stdout,
             stderr: resp.stderr,
-            exit_code: if resp.exit_code >= 0 { Some(resp.exit_code) } else { None },
+            exit_code: if resp.exit_code >= 0 {
+                Some(resp.exit_code)
+            } else {
+                None
+            },
             timed_out: resp.timed_out,
         })
     }

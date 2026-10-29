@@ -1,11 +1,11 @@
 use executor::{
-    executor_server::Executor,
     GradeRequest, GradeResponse, HealthRequest, HealthResponse, RunRequest, RunResponse,
+    executor_server::Executor,
 };
 use tonic::{Request, Response, Status};
 use tracing::{debug, info};
 
-use crate::execution::{grade_exercise, health_check, run_script, RunConfig};
+use crate::execution::{RunConfig, grade_exercise, health_check, run_script};
 
 pub struct ExecutorService {
     config: RunConfig,
@@ -32,7 +32,11 @@ impl Executor for ExecutorService {
         request: Request<RunRequest>,
     ) -> Result<Response<RunResponse>, Status> {
         let req = request.into_inner();
-        debug!("RunScript request: script_len={}, timeout={}s", req.script.len(), req.timeout_seconds);
+        debug!(
+            "RunScript request: script_len={}, timeout={}s",
+            req.script.len(),
+            req.timeout_seconds
+        );
 
         let mut config = self.config.clone();
         if req.timeout_seconds > 0 {
@@ -42,9 +46,9 @@ impl Executor for ExecutorService {
             config.max_output_bytes = req.max_output_bytes as usize;
         }
 
-        let result = run_script(req.script, config).await.map_err(|e| {
-            Status::internal(format!("Execution failed: {}", e))
-        })?;
+        let result = run_script(req.script, config)
+            .await
+            .map_err(|e| Status::internal(format!("Execution failed: {}", e)))?;
 
         Ok(Response::new(RunResponse {
             stdout: result.stdout,
