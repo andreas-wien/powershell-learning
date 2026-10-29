@@ -26,7 +26,6 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "powershell-learning.fullname" . }}-executor
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000

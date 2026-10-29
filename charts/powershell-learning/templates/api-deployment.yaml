@@ -41,6 +41,8 @@ spec:
         - name: {{ $key }}
           value: {{ $value | quote }}
         {{- end }}
+        - name: EXECUTOR_ADDR
+          value: "http://{{ include \"powershell-learning.fullname\" . }}-executor:{{ .Values.executor.service.port }}"
         resources:
           {{- toYaml .Values.api.resources | nindent 10 }}
         livenessProbe:
