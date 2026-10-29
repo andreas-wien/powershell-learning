@@ -51,13 +51,13 @@ spec:
         resources:
           {{- toYaml .Values.executor.resources | nindent 10 }}
         livenessProbe:
-          exec:
-            command: ["/bin/sh", "-c", "grpc_health_probe -addr=:50051"]
+          tcpSocket:
+            port: grpc
           initialDelaySeconds: 10
           periodSeconds: 10
         readinessProbe:
-          exec:
-            command: ["/bin/sh", "-c", "grpc_health_probe -addr=:50051"]
+          tcpSocket:
+            port: grpc
           initialDelaySeconds: 5
           periodSeconds: 5
 {{- end }}
