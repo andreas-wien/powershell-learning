@@ -4,11 +4,11 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY web/package*.json ./
 RUN npm ci
 
 # Copy source and build
-COPY . .
+COPY web/ ./
 RUN npm run build
 
 # Runtime stage
@@ -21,8 +21,8 @@ RUN apk add --no-cache gettext
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy nginx config template and entrypoint
-COPY nginx.conf.template /etc/nginx/conf.d/default.conf.template
-COPY entrypoint.sh /entrypoint.sh
+COPY web/nginx.conf.template /etc/nginx/conf.d/default.conf.template
+COPY web/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 EXPOSE 80
